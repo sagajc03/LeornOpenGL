@@ -1,6 +1,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <stb_image\stb_image.h>
+#include <stb_image/stb_image.h>
 
 #include "classes/Shader.h"
 
@@ -8,11 +8,12 @@
 
 // Solicita GPU NVIDIA/AMD discreta en sistemas Optimus/PowerXpress.
 // Colocar esto en la parte superior del fichero, fuera de cualquier función.
-extern "C" {
-    __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
-    __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
-}
-
+#ifdef _WIN32
+    extern "C" {
+        __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
+        __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+    }
+#endif
 // Prototipo de la funci�n para inicializar GLFW y OpenGL
 void initializeGLFW();
 void processInput(GLFWwindow* window);
@@ -75,14 +76,14 @@ int main()
     // Ejecutar justo antes de glTexImage2D
     //printf("window ptr = %p\n", (void*)window);
     //printf("glfwGetCurrentContext() = %p\n", (void*)glfwGetCurrentContext());
-    printf("glGetString(GL_VENDOR) = %s\n", glGetString(GL_VENDOR));
-    printf("glGetString(GL_RENDERER) = %s\n", glGetString(GL_RENDERER));
-    //printf("glGetString(GL_VERSION) = %s\n", glGetString(GL_VERSION));
-    //GLenum err = glGetError();
-    //printf("glGetError() before = 0x%04X\n", err);
-    //GLint align = 0; glGetIntegerv(GL_UNPACK_ALIGNMENT, &align);
-    //printf("GL_UNPACK_ALIGNMENT = %d\n", align);
-    //printf("glIsTexture(%u) = %d\n", texture, glIsTexture(texture));
+    // printf("glGetString(GL_VENDOR) = %s\n", glGetString(GL_VENDOR));
+    // printf("glGetString(GL_RENDERER) = %s\n", glGetString(GL_RENDERER));
+    // //printf("glGetString(GL_VERSION) = %s\n", glGetString(GL_VERSION));
+    // //GLenum err = glGetError();
+    // //printf("glGetError() before = 0x%04X\n", err);
+    // //GLint align = 0; glGetIntegerv(GL_UNPACK_ALIGNMENT, &align);
+    // //printf("GL_UNPACK_ALIGNMENT = %d\n", align);
+    // //printf("glIsTexture(%u) = %d\n", texture, glIsTexture(texture));
 
     // Antes de glTexImage2D: usar formato interno explícito y comprobar errores
     if (data)
