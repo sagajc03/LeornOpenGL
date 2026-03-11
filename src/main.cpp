@@ -76,8 +76,9 @@ int main() {
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     //"D:\Dev\OpenGL\LeornOpenGL\shaders\shader1.fs"
-    Shader lightingShader("shaders/shader1.vs", "shaders/shader1.fs");
-    Shader lightCubeShader("shaders/light_cube.vs", "shaders/light_cube.fs");
+    Shader lightingShader("../shaders/shader1.vs", "../shaders/shader1.fs");
+    Shader lightCubeShader("../shaders/light_cube.vs",
+                           "../shaders/light_cube.fs");
 
     // clang-format off
    float vertices[] = {
@@ -185,9 +186,10 @@ int main() {
                           (void *)0);
     glEnableVertexAttribArray(0);
 
-    unsigned int diffuseMap = loadTexture("textures/container2.png");
-    unsigned int specularMap = loadTexture("textures/container2_specular.png");
-    unsigned int emissionMap = loadTexture("textures/matrix.jpg");
+    unsigned int diffuseMap = loadTexture("../textures/container2.png");
+    unsigned int specularMap =
+        loadTexture("../textures/container2_specular.png");
+    unsigned int emissionMap = loadTexture("../textures/matrix.jpg");
 
     lightingShader.use();
     lightingShader.setInt("material.diffuse", 0);
