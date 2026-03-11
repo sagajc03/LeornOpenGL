@@ -1,0 +1,12 @@
+CompileFlags:
+  CompilationDatabase: .
+
+Index:
+  Background: Build
+
+Diagnostics:
+  UnusedIncludes: None
+
+If:
+  PathMatch: "includes/.*"
+  PathExclude: "build/.*"
