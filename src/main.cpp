@@ -1,4 +1,6 @@
+#include <cmath>
 #include <cstddef>
+#include <cstdlib>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -46,7 +48,7 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 155.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -83,15 +85,83 @@ int main() {
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    Shader shader("../shaders/shader1.vs", "../shaders/shader1.fs");
-
-    Shader normalShader("../shaders/shader2.vs", "../shaders/normalview.fs",
-                        "../shaders/normalview.gs");
-
-    Model face("../objects/face/cuerpo3.obj");
+    Shader planetShader("../shaders/shader1.vs", "../shaders/shader1.fs");
+    Shader asteroidShader("../shaders/asteroids.vs", "../shaders/asteroids.fs");
+    Model planet("../objects/planet/planet.obj");
+    Model rock("../objects/rock/rock.obj");
     // stbi_set_flip_vertically_on_load(true);
 
     // Model backpack("../objects/backpack/backpack.obj");
+    //
+    unsigned int amount = 30000;
+    glm::mat4 *modelMatrices;
+    modelMatrices = new glm::mat4[amount];
+    srand(static_cast<unsigned int>(glfwGetTime()));
+    float radius = 150.0;
+    float offset = 25.0;
+    for (unsigned int i = 0; i < amount; i++) {
+        glm::mat4 model = glm::mat4(1.0f);
+        // translation around corcle with radios in range of offset
+        float angle = (float)i / (float)amount * 360.0f;
+        float displacement =
+            (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+        float x = sin(angle) * radius + displacement;
+        displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+        float y = displacement * 0.4f;
+        displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+        float z = cos(angle) * radius + displacement;
+        model = glm::translate(model, glm::vec3(x, y, z));
+
+        // scale (0.05 < x < 0.25)
+        float scale = (rand() % 20) / 100.0f + 0.05;
+        model = glm::scale(model, glm::vec3(scale));
+
+        // rotation
+        float rotAngle = (rand() % 360);
+        model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8));
+
+        // add to the list
+        modelMatrices[i] = model;
+    }
+
+    // configure instanced array
+    // -------------------------
+    unsigned int buffer;
+    glGenBuffers(1, &buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0],
+                 GL_STATIC_DRAW);
+
+    // set transformation matrices as an instance vertex attribute (with divisor
+    // 1) note: we're cheating a little by taking the, now publicly declared,
+    // VAO of the model's mesh(es) and adding new vertexAttribPointers normally
+    // you'd want to do this in a more organized fashion, but for learning
+    // purposes this will do.
+    // -----------------------------------------------------------------------------------------------------------------------------------
+    for (unsigned int i = 0; i < rock.meshes.size(); i++) {
+        unsigned int VAO = rock.meshes[i].VAO;
+        glBindVertexArray(VAO);
+        // set attribute pointers for matrix (4 times vec4)
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
+                              (void *)0);
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
+                              (void *)(sizeof(glm::vec4)));
+        glEnableVertexAttribArray(5);
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
+                              (void *)(2 * sizeof(glm::vec4)));
+        glEnableVertexAttribArray(6);
+        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
+                              (void *)(3 * sizeof(glm::vec4)));
+
+        glVertexAttribDivisor(3, 1);
+        glVertexAttribDivisor(4, 1);
+        glVertexAttribDivisor(5, 1);
+        glVertexAttribDivisor(6, 1);
+
+        glBindVertexArray(0);
+    }
 
     while (!glfwWindowShouldClose(window)) {
         // per-frame time logic
@@ -109,30 +179,35 @@ int main() {
 
         glm::mat4 projection = glm::perspective(
             glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT,
-            0.1f, 100.0f);
+            0.1f, 1000.0f);
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 model = glm::mat4(1.0f);
-        shader.use();
-        shader.setMat4("projection", projection);
-        shader.setMat4("view", view);
-        shader.setMat4("model", model);
+        asteroidShader.use();
+        asteroidShader.setMat4("projection", projection);
+        asteroidShader.setMat4("view", view);
+        planetShader.use();
+        planetShader.setMat4("projection", projection);
+        planetShader.setMat4("view", view);
 
-        shader.setFloat("time", static_cast<float>(glfwGetTime()));
+        // draw planet
+        model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(4.0f, 4.0f, 4.0f));
+        planetShader.setMat4("model", model);
+        planet.Draw(planetShader);
 
-        face.Draw(shader);
-
-        model = glm::translate(model, glm::vec3(1.0f, 0.0f, 0.0f));
-
-        // shader.setMat4("model", model);
-        // backpack.Draw(shader);
-
-        normalShader.use();
-        normalShader.setMat4("projection", projection);
-        normalShader.setMat4("view", view);
-        model = glm::mat4(1.0f);
-        normalShader.setMat4("model", model);
-
-        face.Draw(normalShader);
+        // draw meteorites
+        asteroidShader.use();
+        asteroidShader.setInt("texture_diffuse1", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, rock.textures_loaded[0].id);
+        for (unsigned int i = 0; i < rock.meshes.size(); i++) {
+            glBindVertexArray(rock.meshes[i].VAO);
+            glDrawElementsInstanced(
+                GL_TRIANGLES,
+                static_cast<unsigned int>(rock.meshes[i].indices.size()),
+                GL_UNSIGNED_INT, 0, amount);
+            glBindVertexArray(0);
+        }
 
         // model = glm::translate(model, glm::vec3(1.0f, 0.0f, 0.0f));
         //  backpack.Draw(normalShader);
