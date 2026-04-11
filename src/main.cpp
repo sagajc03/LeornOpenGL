@@ -50,6 +50,7 @@ bool gammaEnabled = false;
 bool gammaKeyPressed = false;
 bool shadows = true;
 bool shadowsKeyPressed = false;
+float heightScale = 0.1f;
 
 // timing
 float deltaTime = 0.0f;
@@ -98,20 +99,22 @@ int main() {
 
     glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
-    Shader shader("../shaders/normal_mapping.vs",
-                  "../shaders/normal_mapping.fs");
+    Shader shader("../shaders/parallax_shader.vs",
+                  "../shaders/parallax_shader.fs");
 
-    unsigned int diffuseMap = loadTexture("../textures/brickwall.jpg");
-    unsigned int normalMap = loadTexture("../textures/brickwall_normal.jpg");
+    unsigned int diffuseMap = loadTexture("../textures/bricks2.jpg");
+    unsigned int normalMap = loadTexture("../textures/bricks2_normal.jpg");
+    unsigned int dispMap = loadTexture("../textures/bricks2_disp.jpg");
 
     // shader configuration
     // --------------------
     shader.use();
     shader.setInt("diffuseMap", 0);
     shader.setInt("normalMap", 1);
+    shader.setInt("depthMap", 2);
     // lighting info
     // -------------
-    glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
+    glm::vec3 lightPos(0.5f, 1.0f, 0.3f);
 
     while (!glfwWindowShouldClose(window)) {
         // per-frame time logic
@@ -140,20 +143,24 @@ int main() {
         shader.use();
         shader.setMat4("projection", projection);
         shader.setMat4("view", view);
-        // render normal-mapped quad
+        // render parallax-mapped quad
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::rotate(
             model, glm::radians((float)glfwGetTime() * -10.0f),
             glm::normalize(
-                glm::vec3(1.0, 0.0, 1.0))); // rotate the quad to show normal
+                glm::vec3(1.0, 0.0, 1.0))); // rotate the quad to show parallax
                                             // mapping from multiple directions
         shader.setMat4("model", model);
         shader.setVec3("viewPos", camera.Position);
         shader.setVec3("lightPos", lightPos);
+        shader.setFloat("heightScale", heightScale); // adjust with Q and E keys
+        std::cout << heightScale << std::endl;
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, diffuseMap);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, normalMap);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, dispMap);
         renderQuad();
 
         // render light source (simply re-renders a smaller plane at the light's
@@ -207,6 +214,17 @@ void processInput(GLFWwindow *window) {
     }
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE) {
         shadowsKeyPressed = false;
+    }
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+        if (heightScale > 0.0f)
+            heightScale -= 0.0005f;
+        else
+            heightScale = 0.0f;
+    } else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+        if (heightScale < 1.0f)
+            heightScale += 0.0005f;
+        else
+            heightScale = 1.0f;
     }
 }
 
